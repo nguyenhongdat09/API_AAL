@@ -99,18 +99,18 @@ namespace API_Migrate
                 Task callApi = PeriodicAsync(async () =>
                 {
                     await API_Calling(controller);
-                    await ExecuteControllerAsync(controller);
+                    
                     //Call Url xong, Day vao bang api_receive 
                     // Xong chay xuong ExecuteControllerAsync tim data trong api_receive day vao FAST
                 }, TimeSpan.FromSeconds(sencond_API));
-                /*
+                
                 //Nếu muốn luồng sql song song với luồng gọi API thì nhả ra trong case này thì cần tuần tự Vì ThanhPho là chạy thủ công gọi mới chạy
                 //Tách ra 2 luồng song song callApi chạy rồi insertToTable chạy lập tức mà không cần đợi callApi xong
                 Task insertToTable = PeriodicAsync(async () =>
                 {
                     await ExecuteControllerAsync(controller);
                 }, TimeSpan.FromSeconds(sencond_SQL));
-                */
+               
 
             }
 
