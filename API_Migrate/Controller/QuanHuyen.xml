@@ -1,0 +1,44 @@
+﻿<getapi xmlns="urn:schemas-fast-com:fast-api">
+	<query>
+		<text>
+			<![CDATA[    
+
+IF NOT EXISTS(SELECT 1 FROM api_receiveAAL  with(nolock) WHERE controller = @@controller and get_data_yn = 0 ) RETURN
+ SELECT TOP 0 * 
+	INTO #table 
+	    FROM  api_receiveAAL  with(nolock)
+ UPDATE api_receiveAAL  set get_data_yn = 1  
+	  OUTPUT inserted.* 
+		  INTO #table
+		  where controller = @@controller and get_data_yn = 0 
+ SELECT  ID,
+    y.value('(Id_Quan)[1]', 'varchar(64)') AS id_quan,
+    y.value('(Ma_Quan)[1]', 'varchar(33)') AS ma_quan,
+     y.value('(Ten_Quan)[1]', 'nvarchar(256)') AS ten_quan
+	 , a.ghi_chu as id_tp
+	 INTO #zcdmquanhuyen_api
+		FROM #table a  CROSS APPLY a.data_api.nodes('Root/Data/Datum') AS x(y)
+IF NOT EXISTS(SELECT 1 FROM #zcdmquanhuyen_api) begin
+	select N'Không tìm thấy dòng nào khi đồng bộ' as message
+	return
+end
+declare @d0 datetime = getdate()
+
+UPDATE a SET  ten_quan = b.ten_quan
+	FROM zcdmquanhuyen_api a join #zcdmquanhuyen_api b on a.id_quan = b.id_quan and a.id_tp = b.id_tp 
+
+ INSERT INTO zcdmquanhuyen_api(id_quan, ma_quan, ten_quan, datetime0, datetime2, user_id0, user_id2, id_tp)
+SELECT id_quan, ma_quan, ten_quan, @d0, @d0, @@user_id, @@user_id, id_tp
+	FROM #zcdmquanhuyen_api a
+	where not exists(select 1 from zcdmquanhuyen_api b where a.id_quan = b.id_quan and a.id_tp = b.id_tp  )
+--
+delete api_receiveAAL where get_data_yn = 1 and controller = @@controller and 1 = 0
+--
+ 
+
+select N'Thêm thành công Quận huyện' as message
+
+]]>
+		</text>
+	</query>
+</getapi>

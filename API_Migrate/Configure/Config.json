@@ -1,0 +1,62 @@
+﻿{
+  "configuration": {
+    "timeSleep": {
+      "value": "5",
+      "description": "Thời gian chờ để hệ thống khởi động (giay) - Qua kh phải đặt cỡ 5 phút = 300s"
+    },
+    "tokenTimeOut": {
+      "value": "72000",
+      "description": "Tính bằng giây (nên khai báo = 0.9 lần  thông báo của đối tác) "
+    },
+    "timeInterval": {
+      "value": "5",
+      "description": "Thời gian lặp kiểm tra (giây)"
+    },
+    "timeIntervalSQL": {
+      "value": "10",
+      "description": "Thời gian chạy sql (giây)"
+    },
+    "userName": {
+      "value": "SG01CP000733",
+      "description": "Tùy vào DA mà thông tin này có hay không"
+    },
+    "userPass": {
+      "value": "VAC^%$!@#",
+      "description": "Tùy vào DA mà thông tin này có hay không"
+    },
+    "apiKey": {
+      "value": "",
+      "description": "Tùy vào DA mà thông tin này có hay không"
+    },
+    "sysDatabaseName": {
+      "value": "EPLUS_FBI_FBISP24_S"
+    },
+    "organization": {
+      "value": "AAL",
+      "description": "Tùy vào DA mà thông tin này có hay không"
+    },
+    "isDebug": {
+      "value": "false",
+      "description": "Debug mode"
+    },
+    "userDebug": {
+      "value": "1",
+      "description": "user Debug 123"
+    },
+    "titleTools": {
+      "value": "API AAL",
+      "description": "Tiêu đề API"
+    },
+    "apiURL": {
+      "value": "http://webapi.aal.vn/",
+      "description": "Link Base API"
+    },
+    "token": {
+      "value": "",
+      "description": " "
+    },
+    "appConnectionString": {
+      "value": "Data Source=172.168.5.14\\SQL2008;Initial Catalog=EPLUS_FBI_FBISP24_A; Connect Timeout=6000; Application Name=APIAAL;Uid=eplus_fbi;Pwd=fsd;"
+    }
+  }
+}

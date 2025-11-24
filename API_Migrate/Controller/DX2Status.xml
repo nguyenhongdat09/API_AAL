@@ -1,0 +1,109 @@
+﻿<getapi xmlns="urn:schemas-fast-com:fast-api">
+	<query>
+		<text>
+			<![CDATA[    
+
+IF NOT EXISTS(SELECT 1 FROM api_receiveAAL  with(nolock) WHERE controller = @@controller and get_data_yn = 0 ) RETURN
+ SELECT TOP 0 * 
+	INTO #table 
+	    FROM  api_receiveAAL  with(nolock)
+ UPDATE api_receiveAAL  set get_data_yn = 1  
+	  OUTPUT inserted.* 
+		  INTO #table
+		  where controller = @@controller and get_data_yn = 0 
+ 
+ SELECT  ID, y.value('(Ma_Trang_Thai)[1]', 'varchar(64)') AS status_bill
+	,  y.value('(Ngay_Tao)[1]', 'varchar(64)') as ngay_tao, y.value('(Gio_Tao)[1]', 'varchar(64)') as gio_tao
+	
+ 	, CAST(null as small datetime) AS ngay_bill 
+    , CAST(0 as int) as stt 
+	, a.ghi_chu 
+	 INTO #trung_gian
+		FROM #table a  CROSS APPLY a.data_api.nodes('Root/Data/Datum') AS x(y)
+ 
+
+IF NOT EXISTS(SELECT 1 FROM #trung_gian) begin
+	select N'Không tìm thấy dòng Bill Status nào khi đồng bộ' as message
+	return
+end
+--
+update #trung_gian set ngay_bill = cast(CONVERT(varchar(8),convert(datetime, ngay_tao, 103), 112) + ' ' + gio_tao AS smalldatetime as smalldatetime)
+;with t as (
+	SELECT stt, ROW_NUMBER() OVER(order by ngay_bill) as _stt
+		FROM #trung_gian
+)update t set stt = _stt 
+declare @so_bill varchar(33), @stt_rec_bill varchar(33), @ticket varchar(128), @q nvarchar(4000), @status_bill varchar(33) 
+declare @stt_rec0 int = 0, @line_nbr int = 0, @Size int
+SELECT @Size = character_maximum_length FROM information_schema.columns WHERE table_name = 'r00$000000' AND column_name = 'so_ct'
+
+begin tran 
+select _id, val as _data, status_bill
+	into #thong_tin
+		from #trung_gian a cross apply dbo.fsd_StringToTableByChar(ghi_chu, '#')
+
+select @so_bill = _data
+	from #thong_tin 
+	where _id = 1 
+select @stt_rec_bill = _data
+	from #thong_tin 
+	where _id = 2   
+--
+ 
+
+--Update
+;with t as (
+	select stt_rec, max(stt_rec0) as stt_rec0, max(line_nbr) as line_nbr
+		from d67$lsttgh 
+		where stt_rec = @stt_rec_bill 
+		group by stt_rec
+)
+select @stt_rec0 = cast(stt_rec0 as int), @line_nbr = line_nbr
+	from t 
+delete d67$lsttgh where stt_rec = @stt_rec_bill and status = @status_bill
+insert into d67$lsttgh(stt_rec, ma_ct, stt_rec0, so_ct, ngay_ct, status, thoi_gian, line_nbr, api_yn )	
+select @stt_rec_bill, 'DX2', replace(str(@stt_rec0 + stt, 3), ' ', '0'), dbo.ff_PadL(REPLACE(RTRIM(ltrim(@so_bill)), '''', ''''''), @Size), ngay_ct, b.status_fast, ngay_bill, @line_nbr + stt, 1
+	from #trung_gian a left join zcdmquyuocttgh b on a.status = b.status_aal, c67$000000 b 
+	where stt_rec = @stt_rec_bill
+ --
+select top 1 @status_bill =  status 
+	from d67$lsttgh
+	where stt_rec = @stt_rec_bill
+	order by thoi_gian desc  
+
+select stt_rec, CONVERT(VARCHAR(6), ngay_ct, 112) as parti
+	into #parti
+		from c67$000000
+		where stt_rec = @stt_rec_bill
+SELECT @q =''
+SELECT @q += '	
+			
+			update a set trang_thai_giao_hang = '''+@status_bill+'''
+					from m67$'+parti+' a with(nolock) 
+					where exists(select 1 from #parti b where a.stt_rec = b.stt_rec) 
+					'
+	FROM #parti
+	GROUP BY parti
+exec(@q)
+select b.stt_rec, CONVERT(VARCHAR(6), b.ngay_ct, 112) as parti 
+	into #parti_66
+		from fsdSttRecRef a join c66$000000 b on a.stt_rec_pre = b.stt_rec
+		where a.stt_rec = @stt_rec_bill 
+SELECT @q =''
+SELECT @q += '	 
+			update a set trang_thai_giao_hang = '''+@status_bill+'''
+					from m66$'+parti+' a with(nolock) 
+					where exists(select 1 from #parti_66 b where a.stt_rec = b.stt_rec) 
+					'
+	FROM #parti
+	GROUP BY parti
+exec(@q)
+  
+--
+delete api_receiveAAL where get_data_yn = 1 and controller = @@controller and 1 = 0
+-- 
+select N'Gọi thành công Bill Status' as message
+
+]]>
+		</text>
+	</query>
+</getapi>

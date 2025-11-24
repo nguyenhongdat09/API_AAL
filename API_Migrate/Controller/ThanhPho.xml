@@ -1,0 +1,43 @@
+﻿<getapi xmlns="urn:schemas-fast-com:fast-api">
+	<query>
+		<text>
+			<![CDATA[    
+IF NOT EXISTS(SELECT 1 FROM api_receiveAAL  with(nolock) WHERE controller = @@controller and get_data_yn = 0 ) RETURN
+ SELECT TOP 0 * 
+	INTO #table 
+	    FROM  api_receiveAAL  with(nolock)
+ UPDATE api_receiveAAL  set get_data_yn = 1  
+	  OUTPUT inserted.* 
+		  INTO #table
+		  where controller = @@controller and get_data_yn = 0 
+ SELECT  ID,
+    y.value('(Id_Tp)[1]', 'varchar(64)') AS id_tp,
+    y.value('(Ky_Hieu)[1]', 'varchar(33)') AS ky_hieu,
+     y.value('(Ten_ThanhPho)[1]', 'nvarchar(256)') AS ten_thanh_pho
+	 INTO #zcdmtinhthanh_api
+		FROM #table a  CROSS APPLY a.data_api.nodes('Root/Data/Datum') AS x(y)
+IF NOT EXISTS(SELECT 1 FROM #zcdmtinhthanh_api) begin
+	select N'Không tìm thấy dòng nào khi đồng bộ' as message
+	return
+end
+declare @d0 datetime = getdate()
+   
+UPDATE a SET  ten_thanh_pho = b.ten_thanh_pho
+	FROM zcdmtinhthanh_api a join #zcdmtinhthanh_api b on a.id_tp = b.id_tp  
+ INSERT INTO zcdmtinhthanh_api(id_tp, ky_hieu, ten_thanh_pho, datetime0, datetime2, user_id0, user_id2)
+SELECT id_tp, ky_hieu, ten_thanh_pho, @d0, @d0, @@user_id, @@user_id
+	FROM #zcdmtinhthanh_api a
+	where not exists(select 1 from zcdmtinhthanh_api b where a.id_tp = b.id_tp   )
+ 
+insert into fsdSyncGetAAL( controller, key_from, key_to, xtype, datetime0, user_id0, id_tp)
+  select 'QuanHuyen', '', '', '2', GETDATE(), @@user_id, id_tp
+    from zcdmtinhthanh_api 
+--
+delete api_receiveAAL where get_data_yn = 1 and controller = @@controller and 1 = 0
+--
+select N'Thêm thành công Thành phố' as message
+
+]]>
+		</text>
+	</query>
+</getapi>
